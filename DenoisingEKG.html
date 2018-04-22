@@ -1,0 +1,404 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>DenoisingEKG</title><meta name="generator" content="MATLAB 8.6"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2018-04-22"><meta name="DC.source" content="DenoisingEKG.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">Steps</a></li><li><a href="#3">Load the signal</a></li><li><a href="#4">Filter Signal</a></li><li><a href="#5">Filtered Signal -Comparison</a></li><li><a href="#6">Further Exploration</a></li><li><a href="#7">Attempt to extract heart rate</a></li><li><a href="#8">Matlab Project #1</a></li></ul></div><pre class="codeinput">clc; close <span class="string">all</span>; clear; format <span class="string">compact</span>;
+</pre><h2>Steps<a name="2"></a></h2><p>Load and visualize the signal Preprocess the signal to remove artifacts Perform wavelet based time-frequency analysis to identify features</p><h2>Load the signal<a name="3"></a></h2><pre class="codeinput"><span class="comment">%parfor file = 1:7</span>
+file = 1;
+
+fileName = sprintf(<span class="string">'scope_%d.csv'</span>, file);
+fileID = fopen(fileName,<span class="string">'r'</span>);
+specs = strsplit(fgetl(fileID), <span class="string">','</span>);
+units = strsplit(fgetl(fileID), <span class="string">','</span>);
+formatSpec = <span class="string">'%f,%f'</span>;
+sizeA = [2 Inf];
+A = fscanf(fileID,formatSpec,sizeA);
+fclose(fileID);
+
+<span class="comment">% Assuming sampling frequency is static per data set</span>
+Fs = floor(1/(A(1,2) - A(1,1)));
+ekg = A(2:2,:);
+t = A(1:1,:);
+
+<span class="comment">% The power spectral density of the original signal shows that the obvious</span>
+<span class="comment">% expected line frequency at 60 Hz is overpowering.</span>
+</pre><h2>Filter Signal<a name="4"></a></h2><p>Lovely tutorial https://www.mathworks.com/help/signal/ug/remove-the-60-hz-hum-from-a-signal.html</p><pre class="codeinput">notchFilt = designfilt(<span class="string">'bandstopiir'</span>, <span class="string">'FilterOrder'</span>, 6, <span class="string">'HalfPowerFrequency1'</span>, 59, <span class="keyword">...</span>
+            <span class="string">'HalfPowerFrequency2'</span>, 61, <span class="string">'DesignMethod'</span>,<span class="string">'butter'</span>, <span class="string">'SampleRate'</span>, Fs);
+ekgSampleFiltered = filtfilt(notchFilt,  ekg);
+</pre><h2>Filtered Signal -Comparison<a name="5"></a></h2><pre class="codeinput">figure(<span class="string">'position'</span>, [0, 0, 1280, 800]);
+p = uipanel(<span class="string">'Parent'</span>,gcf,<span class="string">'BorderType'</span>,<span class="string">'none'</span>);
+p.Title = fileName;
+p.TitlePosition = <span class="string">'centertop'</span>;
+p.FontSize = 12;
+p.FontWeight = <span class="string">'bold'</span>;
+
+ax1 = subplot(2,1,1,<span class="string">'Parent'</span>,p);
+plot(ax1, t,ekg,t,ekgSampleFiltered)
+ylabel(<span class="string">'Voltage (V)'</span>)
+xlabel(<span class="string">'Time (s)'</span>)
+title([<span class="string">'Signal in Time'</span>])
+legend(<span class="string">'Unfiltered'</span>,<span class="string">'Filtered'</span>)
+grid
+
+[pekg,fekg] = periodogram(ekg,[],[],Fs);
+[pnotch,fnotch] = periodogram(ekgSampleFiltered,[],[],Fs);
+
+ax2 = subplot(2,1,2,<span class="string">'Parent'</span>,p);
+plot(ax2, fekg,20*log10(abs(pekg)),fnotch,20*log10(abs(pnotch)),<span class="string">'--'</span>)
+ylabel(<span class="string">'Power (dB)'</span>)
+xlabel(<span class="string">'Frequency (Hz)'</span>)
+title(<span class="string">'Power Spectrum'</span>)
+legend(<span class="string">'Unfiltered'</span>,<span class="string">'Filtered'</span>)
+grid
+
+saveas(gcf,[fileName <span class="string">'.jpg'</span>]);
+
+<span class="comment">%end % for parfor</span>
+</pre><img vspace="5" hspace="5" src="DenoisingEKG_01.png" alt=""> <h2>Further Exploration<a name="6"></a></h2><p>Adapted from https://www.mathworks.com/matlabcentral/fileexchange/61565-feature-detection-in-signals-using-wavelets?focused=7388009&amp;tab=function Center of the QRS ranges from 5 Hz to 22 Hz We will extract this using the Discrete Wavelet Transform</p><pre class="codeinput"><span class="comment">% Partition the signal into different bands</span>
+<span class="comment">% extractQRSband</span>
+<span class="comment">% Level 4 Details ==&gt; 11 Hz - 22 Hz</span>
+<span class="comment">% Level 5 Details ==&gt; 5 Hz - 11 Hz</span>
+level = 5;
+stLevl = 4;
+endLevel =5;
+wt = modwt(ekgSampleFiltered,level);
+wtrec = zeros(size(wt));
+wtrec(stLevl:endLevel,:) = wt(stLevl:endLevel,:);
+ecgQRSBand = imodwt(wtrec,<span class="string">'sym4'</span>);
+
+
+figure(<span class="string">'position'</span>, [0, 0, 1280, 800]);
+p = uipanel(<span class="string">'Parent'</span>,gcf,<span class="string">'BorderType'</span>,<span class="string">'none'</span>);
+p.Title = <span class="string">'Discrete Wavelet Transform'</span>;
+p.TitlePosition = <span class="string">'centertop'</span>;
+p.FontSize = 12;
+p.FontWeight = <span class="string">'bold'</span>;
+
+ax1 = subplot(3,2,[1 2],<span class="string">'Parent'</span>,p);
+plot(ax1, t,ecgQRSBand)
+ylabel(<span class="string">'Voltage (V)'</span>)
+xlabel(<span class="string">'Time (s)'</span>)
+title([<span class="string">'Isolating QRS Band'</span>])
+legend(<span class="string">'QRS Wave'</span>)
+grid
+
+ax2 = subplot(3,2,5,<span class="string">'Parent'</span>,p);
+plot(ax2, t, wt(1,:), <span class="keyword">...</span>
+          t, wt(2,:), <span class="keyword">...</span>
+          t, wt(3,:), <span class="keyword">...</span>
+          t, wt(4,:), <span class="keyword">...</span>
+          t, wt(5,:), <span class="keyword">...</span>
+          t, wt(6,:));
+ylabel(<span class="string">'Voltage (V)'</span>)
+xlabel(<span class="string">'Time (s)'</span>)
+title(<span class="string">'Wavelet Breakdowns'</span>)
+legend(<span class="string">'Level 1'</span>,<span class="string">'Level 2'</span>,<span class="string">'Level 3'</span>,<span class="string">'Level 4'</span>,<span class="string">'Level 5'</span>,<span class="string">'Level 6'</span>)
+grid
+
+ax3 = subplot(3,2,3,<span class="string">'Parent'</span>,p);
+plot(ax3, t,wt(4,:)), axis <span class="string">tight</span>
+ylabel(<span class="string">'Voltage (V)'</span>)
+xlabel(<span class="string">'Time (s)'</span>)
+title([<span class="string">'Level 4 Wavelet Selection'</span>])
+legend(<span class="string">'Level 4'</span>)
+grid
+ax3 = subplot(3,2,4,<span class="string">'Parent'</span>,p);
+plot(ax3, t,wt(5,:)), axis <span class="string">tight</span>
+ylabel(<span class="string">'Voltage (V)'</span>)
+xlabel(<span class="string">'Time (s)'</span>)
+title([<span class="string">'Level 5 Wavelet Selection'</span>])
+legend(<span class="string">'Level 5'</span>)
+grid
+
+wtOriginal = modwt(ekg,level);
+ax4 = subplot(3,2,6,<span class="string">'Parent'</span>,p);
+plot(ax4, t, wtOriginal(1,:), <span class="keyword">...</span>
+          t, wtOriginal(2,:), <span class="keyword">...</span>
+          t, wtOriginal(3,:), <span class="keyword">...</span>
+          t, wtOriginal(4,:), <span class="keyword">...</span>
+          t, wtOriginal(5,:), <span class="keyword">...</span>
+          t, wtOriginal(6,:));
+ylabel(<span class="string">'Voltage (V)'</span>)
+xlabel(<span class="string">'Time (s)'</span>)
+title(<span class="string">'Wavelet Breakdowns Without Filtering'</span>)
+legend(<span class="string">'Level 1'</span>,<span class="string">'Level 2'</span>,<span class="string">'Level 3'</span>,<span class="string">'Level 4'</span>,<span class="string">'Level 5'</span>,<span class="string">'Level 6'</span>)
+grid
+
+linkaxes([ax2,ax4],<span class="string">'y'</span>)
+
+<span class="comment">% It's interesting to note here that if you wavelet transform the original</span>
+<span class="comment">% ekg signal you will see a lot of noise from the power line, but the other</span>
+<span class="comment">% sources of noise are extremely small in the other bands aside from L6.</span>
+<span class="comment">% The largest source of noise and offset of the signal is from signals near</span>
+<span class="comment">% DC. All the other bands are surprisingly zero mean!</span>
+<span class="comment">% If we are doing the wavelet transform, we don't really need to filter out</span>
+<span class="comment">% the 60 Hz since it doesn't overlap with our signal. The wavelet transform</span>
+<span class="comment">% serves as a "perfect" notch filter for each frequency band.</span>
+
+<span class="comment">% For our signals, it does look like Level 4 and Level 5 contain the same</span>
+<span class="comment">% signal but with a slight lag between the two.</span>
+</pre><img vspace="5" hspace="5" src="DenoisingEKG_02.png" alt=""> <h2>Attempt to extract heart rate<a name="7"></a></h2><p>Detect R-peaks using a peak detection approach</p><pre class="codeinput">ecgQRSBandSq = ecgQRSBand.^2;
+figure;
+plot(t,ecgQRSBandSq)
+ylabel(<span class="string">'Voltage (V)'</span>)
+xlabel(<span class="string">'Time (s)'</span>)
+title([<span class="string">'Isolating QRS Band'</span>])
+legend(<span class="string">'QRS Wave'</span>)
+grid
+
+rThreshold = 0.08; <span class="comment">% Empirical value determined by examining the graph</span>
+[ecgQRSBandSqPks,ecgQRSBandSqlocs] = findpeaks(ecgQRSBandSq, <span class="keyword">...</span>
+                                        <span class="string">'MinPeakHeight'</span>,rThreshold,<span class="keyword">...</span>
+                                        <span class="string">'MinPeakDistance'</span>,60);
+hr = mean(60./diff(t(ecgQRSBandSqlocs)));
+fprintf(<span class="string">'Avg. Heart rate obtained after Wavelet QRS band isolation:: %0.2f bpm\n'</span>,hr);
+</pre><pre class="codeoutput">Avg. Heart rate obtained after Wavelet QRS band isolation:: 61.31 bpm
+</pre><img vspace="5" hspace="5" src="DenoisingEKG_03.png" alt=""> <h2>Matlab Project #1<a name="8"></a></h2><p>Denoising EKG Recordings Due Date :        April 9, 2018 Date Performed:	April 22, 2018 Submission by:	Spellchaser For ECE 444:      Prof. Kremenic Sample Used:      scope_1.csv</p><p class="footer">Copyright 2017 The MathWorks, Inc.<br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2015b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+clc; close all; clear; format compact; 
+%Copyright 2017 The MathWorks, Inc.
+%% Steps
+% Load and visualize the signal 
+% Preprocess the signal to remove artifacts
+% Perform wavelet based time-frequency analysis to identify features
+
+%% Load the signal
+
+%parfor file = 1:7
+file = 1;
+
+fileName = sprintf('scope_%d.csv', file);
+fileID = fopen(fileName,'r');
+specs = strsplit(fgetl(fileID), ',');
+units = strsplit(fgetl(fileID), ',');
+formatSpec = '%f,%f';
+sizeA = [2 Inf];
+A = fscanf(fileID,formatSpec,sizeA);
+fclose(fileID);
+
+% Assuming sampling frequency is static per data set
+Fs = floor(1/(A(1,2) - A(1,1)));
+ekg = A(2:2,:);
+t = A(1:1,:);
+
+% The power spectral density of the original signal shows that the obvious
+% expected line frequency at 60 Hz is overpowering. 
+
+%% Filter Signal
+% Lovely tutorial https://www.mathworks.com/help/signal/ug/remove-the-60-hz-hum-from-a-signal.html
+notchFilt = designfilt('bandstopiir', 'FilterOrder', 6, 'HalfPowerFrequency1', 59, ...
+            'HalfPowerFrequency2', 61, 'DesignMethod','butter', 'SampleRate', Fs);
+ekgSampleFiltered = filtfilt(notchFilt,  ekg);
+
+%% Filtered Signal -Comparison
+
+figure('position', [0, 0, 1280, 800]);
+p = uipanel('Parent',gcf,'BorderType','none'); 
+p.Title = fileName; 
+p.TitlePosition = 'centertop'; 
+p.FontSize = 12;
+p.FontWeight = 'bold';
+
+ax1 = subplot(2,1,1,'Parent',p);
+plot(ax1, t,ekg,t,ekgSampleFiltered)
+ylabel('Voltage (V)')
+xlabel('Time (s)')
+title(['Signal in Time'])
+legend('Unfiltered','Filtered')
+grid
+
+[pekg,fekg] = periodogram(ekg,[],[],Fs);
+[pnotch,fnotch] = periodogram(ekgSampleFiltered,[],[],Fs);
+
+ax2 = subplot(2,1,2,'Parent',p);
+plot(ax2, fekg,20*log10(abs(pekg)),fnotch,20*log10(abs(pnotch)),'REPLACE_WITH_DASH_DASH')
+ylabel('Power (dB)')
+xlabel('Frequency (Hz)')
+title('Power Spectrum')
+legend('Unfiltered','Filtered')
+grid
+
+saveas(gcf,[fileName '.jpg']);
+
+%end % for parfor
+
+%%  Further Exploration
+% Adapted from https://www.mathworks.com/matlabcentral/fileexchange/61565-feature-detection-in-signals-using-wavelets?focused=7388009&tab=function
+% Center of the QRS ranges from 5 Hz to 22 Hz
+% We will extract this using the Discrete Wavelet Transform
+
+% Partition the signal into different bands
+% extractQRSband
+% Level 4 Details ==> 11 Hz - 22 Hz 
+% Level 5 Details ==> 5 Hz - 11 Hz
+level = 5;
+stLevl = 4;
+endLevel =5;
+wt = modwt(ekgSampleFiltered,level);
+wtrec = zeros(size(wt));
+wtrec(stLevl:endLevel,:) = wt(stLevl:endLevel,:);
+ecgQRSBand = imodwt(wtrec,'sym4');
+
+
+figure('position', [0, 0, 1280, 800]);
+p = uipanel('Parent',gcf,'BorderType','none'); 
+p.Title = 'Discrete Wavelet Transform'; 
+p.TitlePosition = 'centertop'; 
+p.FontSize = 12;
+p.FontWeight = 'bold';
+
+ax1 = subplot(3,2,[1 2],'Parent',p);
+plot(ax1, t,ecgQRSBand)
+ylabel('Voltage (V)')
+xlabel('Time (s)')
+title(['Isolating QRS Band'])
+legend('QRS Wave')
+grid
+
+ax2 = subplot(3,2,5,'Parent',p);
+plot(ax2, t, wt(1,:), ...
+          t, wt(2,:), ...
+          t, wt(3,:), ...
+          t, wt(4,:), ...
+          t, wt(5,:), ...
+          t, wt(6,:));
+ylabel('Voltage (V)')
+xlabel('Time (s)')
+title('Wavelet Breakdowns')
+legend('Level 1','Level 2','Level 3','Level 4','Level 5','Level 6')
+grid
+
+ax3 = subplot(3,2,3,'Parent',p);
+plot(ax3, t,wt(4,:)), axis tight
+ylabel('Voltage (V)')
+xlabel('Time (s)')
+title(['Level 4 Wavelet Selection'])
+legend('Level 4')
+grid
+ax3 = subplot(3,2,4,'Parent',p);
+plot(ax3, t,wt(5,:)), axis tight
+ylabel('Voltage (V)')
+xlabel('Time (s)')
+title(['Level 5 Wavelet Selection'])
+legend('Level 5')
+grid
+
+wtOriginal = modwt(ekg,level);
+ax4 = subplot(3,2,6,'Parent',p);
+plot(ax4, t, wtOriginal(1,:), ...
+          t, wtOriginal(2,:), ...
+          t, wtOriginal(3,:), ...
+          t, wtOriginal(4,:), ...
+          t, wtOriginal(5,:), ...
+          t, wtOriginal(6,:));
+ylabel('Voltage (V)')
+xlabel('Time (s)')
+title('Wavelet Breakdowns Without Filtering')
+legend('Level 1','Level 2','Level 3','Level 4','Level 5','Level 6')
+grid
+
+linkaxes([ax2,ax4],'y')
+
+% It's interesting to note here that if you wavelet transform the original
+% ekg signal you will see a lot of noise from the power line, but the other
+% sources of noise are extremely small in the other bands aside from L6.
+% The largest source of noise and offset of the signal is from signals near
+% DC. All the other bands are surprisingly zero mean! 
+% If we are doing the wavelet transform, we don't really need to filter out
+% the 60 Hz since it doesn't overlap with our signal. The wavelet transform
+% serves as a "perfect" notch filter for each frequency band. 
+
+% For our signals, it does look like Level 4 and Level 5 contain the same
+% signal but with a slight lag between the two. 
+
+%% Attempt to extract heart rate
+% Detect R-peaks using a peak detection approach
+ecgQRSBandSq = ecgQRSBand.^2;
+figure;
+plot(t,ecgQRSBandSq)
+ylabel('Voltage (V)')
+xlabel('Time (s)')
+title(['Isolating QRS Band'])
+legend('QRS Wave')
+grid
+
+rThreshold = 0.08; % Empirical value determined by examining the graph
+[ecgQRSBandSqPks,ecgQRSBandSqlocs] = findpeaks(ecgQRSBandSq, ...
+                                        'MinPeakHeight',rThreshold,...
+                                        'MinPeakDistance',60); 
+hr = mean(60./diff(t(ecgQRSBandSqlocs))); 
+fprintf('Avg. Heart rate obtained after Wavelet QRS band isolation:: %0.2f bpm\n',hr);
+
+%% Matlab Project #1 
+% Denoising EKG Recordings
+% Due Date :        April 9, 2018
+% Date Performed:	April 22, 2018
+% Submission by:	Spellchaser
+% For ECE 444:      Prof. Kremenic
+% Sample Used:      scope_1.csv
+##### SOURCE END #####
+--></body></html>
