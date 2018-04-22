@@ -66,7 +66,9 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 
 
 
-  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">Steps</a></li><li><a href="#3">Load the signal</a></li><li><a href="#4">Filter Signal</a></li><li><a href="#5">Filtered Signal -Comparison</a></li><li><a href="#6">Further Exploration</a></li><li><a href="#7">Attempt to extract heart rate</a></li><li><a href="#8">Matlab Project #1</a></li></ul></div><pre class="codeinput">clc; close <span class="string">all</span>; clear; format <span class="string">compact</span>;
+  </style>
+  <script src="./assets/jq.js"></script><script src="./assets/c.js"></script>
+  </head><body><canvas id="canvas" width="auto" height="auto"></canvas><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">Steps</a></li><li><a href="#3">Load the signal</a></li><li><a href="#4">Filter Signal</a></li><li><a href="#5">Filtered Signal -Comparison</a></li><li><a href="#6">Further Exploration</a></li><li><a href="#7">Attempt to extract heart rate</a></li><li><a href="#8">Matlab Project #1</a></li></ul></div><pre class="codeinput">clc; close <span class="string">all</span>; clear; format <span class="string">compact</span>;
 </pre><h2>Steps<a name="2"></a></h2><p>Load and visualize the signal Preprocess the signal to remove artifacts Perform wavelet based time-frequency analysis to identify features</p><h2>Load the signal<a name="3"></a></h2><pre class="codeinput"><span class="comment">%parfor file = 1:7</span>
 file = 1;
 
@@ -118,7 +120,7 @@ grid
 saveas(gcf,[fileName <span class="string">'.jpg'</span>]);
 
 <span class="comment">%end % for parfor</span>
-</pre><img vspace="5" hspace="5" src="DenoisingEKG_01.png" alt=""> <h2>Further Exploration<a name="6"></a></h2><p>Adapted from https://www.mathworks.com/matlabcentral/fileexchange/61565-feature-detection-in-signals-using-wavelets?focused=7388009&amp;tab=function Center of the QRS ranges from 5 Hz to 22 Hz We will extract this using the Discrete Wavelet Transform</p><pre class="codeinput"><span class="comment">% Partition the signal into different bands</span>
+</pre><img vspace="5" hspace="5" src="./assets/DenoisingEKG_01.png" alt=""> <h2>Further Exploration<a name="6"></a></h2><p>Adapted from https://www.mathworks.com/matlabcentral/fileexchange/61565-feature-detection-in-signals-using-wavelets?focused=7388009&amp;tab=function Center of the QRS ranges from 5 Hz to 22 Hz We will extract this using the Discrete Wavelet Transform</p><pre class="codeinput"><span class="comment">% Partition the signal into different bands</span>
 <span class="comment">% extractQRSband</span>
 <span class="comment">% Level 4 Details ==&gt; 11 Hz - 22 Hz</span>
 <span class="comment">% Level 5 Details ==&gt; 5 Hz - 11 Hz</span>
@@ -201,7 +203,7 @@ linkaxes([ax2,ax4],<span class="string">'y'</span>)
 
 <span class="comment">% For our signals, it does look like Level 4 and Level 5 contain the same</span>
 <span class="comment">% signal but with a slight lag between the two.</span>
-</pre><img vspace="5" hspace="5" src="DenoisingEKG_02.png" alt=""> <h2>Attempt to extract heart rate<a name="7"></a></h2><p>Detect R-peaks using a peak detection approach</p><pre class="codeinput">ecgQRSBandSq = ecgQRSBand.^2;
+</pre><img vspace="5" hspace="5" src="./assets/DenoisingEKG_02.png" alt=""> <h2>Attempt to extract heart rate<a name="7"></a></h2><p>Detect R-peaks using a peak detection approach</p><pre class="codeinput">ecgQRSBandSq = ecgQRSBand.^2;
 figure;
 plot(t,ecgQRSBandSq)
 ylabel(<span class="string">'Voltage (V)'</span>)
@@ -217,7 +219,7 @@ rThreshold = 0.08; <span class="comment">% Empirical value determined by examini
 hr = mean(60./diff(t(ecgQRSBandSqlocs)));
 fprintf(<span class="string">'Avg. Heart rate obtained after Wavelet QRS band isolation:: %0.2f bpm\n'</span>,hr);
 </pre><pre class="codeoutput">Avg. Heart rate obtained after Wavelet QRS band isolation:: 61.31 bpm
-</pre><img vspace="5" hspace="5" src="DenoisingEKG_03.png" alt=""> <h2>Matlab Project #1<a name="8"></a></h2><p>Denoising EKG Recordings Due Date :        April 9, 2018 Date Performed:	April 22, 2018 Submission by:	Spellchaser For ECE 444:      Prof. Kremenic Sample Used:      scope_1.csv</p><p class="footer">Copyright 2017 The MathWorks, Inc.<br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2015b</a><br></p></div><!--
+</pre><img vspace="5" hspace="5" src="./assets/DenoisingEKG_03.png" alt=""> <h2>Matlab Project #1<a name="8"></a></h2><p>Denoising EKG Recordings Due Date :        April 9, 2018 Date Performed:	April 22, 2018 Submission by:	Spellchaser For ECE 444:      Prof. Kremenic Sample Used:      scope_1.csv</p><p class="footer">Copyright 2017 The MathWorks, Inc.<br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2015b</a><br></p></div><!--
 ##### SOURCE BEGIN #####
 clc; close all; clear; format compact; 
 %Copyright 2017 The MathWorks, Inc.
